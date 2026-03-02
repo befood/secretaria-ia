@@ -740,7 +740,7 @@ async function analyzeWithClaude(emailsData) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1000,
       messages: [{
         role: 'user',
@@ -775,15 +775,25 @@ ${txt}`
 async function triggerAnalysis() {
   renderLoading();
   try {
+    console.log('[Secretaria] accessToken:', accessToken ? 'presente' : 'AUSENTE');
     if (accessToken) {
+      console.log('[Secretaria] Obteniendo correos de Gmail...');
       emails = await fetchGmail();
+      console.log('[Secretaria] Correos obtenidos:', emails.length);
+    } else {
+      console.warn('[Secretaria] Sin accessToken, no se pueden obtener correos');
     }
+    const apiKey = JSON.parse(localStorage.getItem('sec_cfg') || '{}').anthropicKey || '';
+    console.log('[Secretaria] API Key presente:', apiKey ? 'sí' : 'NO');
+    console.log('[Secretaria] Correos a analizar:', emails.length);
     const analysis = await analyzeWithClaude(emails);
+    console.log('[Secretaria] Tareas encontradas:', analysis.tasks?.length || 0);
     tasks = (analysis.tasks || []).map(t => ({ ...t, done: false }));
     window._summary = analysis.summary || '';
     renderCurrentTab();
     showToast('✓ Actualizado');
   } catch(e) {
+    console.error('[Secretaria] Error:', e);
     renderError(e.message);
   }
 }
