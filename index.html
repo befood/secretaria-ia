@@ -767,6 +767,8 @@ ${txt}`
   });
 
   const data = await res.json();
+  console.log('[Secretaria] Anthropic response:', JSON.stringify(data));
+  if (data.error) throw new Error('Anthropic: ' + data.error.message);
   const text = (data.content?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
   return JSON.parse(text);
 }
