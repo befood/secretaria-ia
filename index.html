@@ -569,11 +569,15 @@ html, body {
   </div>
 
   <div class="hint">
-    <strong>Configuración rápida Google OAuth:</strong><br>
-    1. <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → Nuevo proyecto<br>
-    2. APIs → Habilitar <strong>Gmail API</strong><br>
-    3. Credenciales → OAuth 2.0 → App web<br>
-    4. URI de redirección: <code id="redirect-uri"></code>
+    <strong>Necesitas 2 claves:</strong><br>
+    1. <strong>Anthropic:</strong> <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key<br>
+    2. <strong>Google Client ID:</strong> <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → Credenciales → OAuth 2.0<br>
+    URI de redirección: <code id="redirect-uri"></code>
+  </div>
+
+  <div class="field">
+    <label>🔑 Anthropic API Key</label>
+    <input type="password" id="anthropic-key" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" autocapitalize="off">
   </div>
 
   <div class="field">
@@ -651,6 +655,7 @@ window.addEventListener('load', () => {
   const cfg = JSON.parse(localStorage.getItem('sec_cfg') || '{}');
   if (cfg.clientId) document.getElementById('client-id').value = cfg.clientId;
   if (cfg.emailCount) document.getElementById('email-count').value = cfg.emailCount;
+  if (cfg.anthropicKey) document.getElementById('anthropic-key').value = cfg.anthropicKey;
 
   const hash = location.hash;
   if (hash.includes('access_token')) {
@@ -664,10 +669,13 @@ window.addEventListener('load', () => {
 // ── AUTH ──
 function startGoogleAuth() {
   const clientId = document.getElementById('client-id').value.trim();
-  if (!clientId) { showToast('Introduce tu Client ID'); return; }
+  const anthropicKey = document.getElementById('anthropic-key').value.trim();
+  if (!anthropicKey) { showToast('Introduce tu Anthropic API Key'); return; }
+  if (!clientId) { showToast('Introduce tu Client ID de Google'); return; }
   localStorage.setItem('sec_cfg', JSON.stringify({
     clientId,
-    emailCount: document.getElementById('email-count').value
+    emailCount: document.getElementById('email-count').value,
+    anthropicKey
   }));
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly')}`;
   location.href = url;
@@ -727,9 +735,10 @@ async function analyzeWithClaude(emailsData) {
     `[${i}] De: ${e.from}\nFecha: ${e.date}\nAsunto: ${e.subject}\nContenido: ${(e.body || e.snippet).substring(0,800)}`
   ).join('\n\n');
 
+  const apiKey = JSON.parse(localStorage.getItem('sec_cfg') || '{}').anthropicKey || '';
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
@@ -974,5 +983,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 </script>
+</body>
+</html>
+
 </body>
 </html>
