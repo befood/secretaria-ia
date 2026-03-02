@@ -1,0 +1,18 @@
+{
+  "name": "Secretaria IA",
+  "short_name": "Secretaria",
+  "description": "Tu asistente personal inteligente",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
