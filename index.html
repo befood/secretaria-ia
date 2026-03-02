@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -777,40 +776,50 @@ ${txt}`
 
 // ── GOOGLE TASKS ──
 async function getOrCreateTaskList() {
+  console.log('[Tasks] Obteniendo listas...');
   const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   const data = await res.json();
+  console.log('[Tasks] Listas response:', JSON.stringify(data));
   const existing = (data.items || []).find(l => l.title === 'Secretaria IA');
-  if (existing) return existing.id;
+  if (existing) { console.log('[Tasks] Lista existente:', existing.id); return existing.id; }
+  console.log('[Tasks] Creando nueva lista...');
   const create = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ title: 'Secretaria IA' })
   });
   const list = await create.json();
+  console.log('[Tasks] Lista creada:', JSON.stringify(list));
   return list.id;
 }
 
 async function pushToGoogleTasks(tasksList) {
+  console.log('[Tasks] Iniciando push, tareas:', tasksList.length, 'token:', accessToken ? 'presente' : 'AUSENTE');
   if (!accessToken) return 0;
   const listId = await getOrCreateTaskList();
+  console.log('[Tasks] listId:', listId);
   const existingRes = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks?showCompleted=false`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   const existingData = await existingRes.json();
+  console.log('[Tasks] Tareas existentes:', JSON.stringify(existingData));
   const existingTitles = (existingData.items || []).map(t => t.title);
   let added = 0;
   for (const task of tasksList) {
-    if (existingTitles.includes(task.title)) continue;
-    await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks`, {
+    if (existingTitles.includes(task.title)) { console.log('[Tasks] Duplicado, skip:', task.title); continue; }
+    const body = JSON.stringify({
+      title: task.title,
+      notes: `De: ${task.from}\n${task.summary}\nPrioridad: ${task.priority === 'urgent' ? 'URGENTE' : task.priority === 'normal' ? 'Normal' : 'Baja'}`
+    });
+    const r = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: task.title,
-        notes: `De: ${task.from}\n${task.summary}\nPrioridad: ${task.priority === 'urgent' ? 'URGENTE' : task.priority === 'normal' ? 'Normal' : 'Baja'}`
-      })
+      body
     });
+    const result = await r.json();
+    console.log('[Tasks] Tarea creada:', JSON.stringify(result));
     added++;
   }
   return added;
